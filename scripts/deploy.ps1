@@ -1,4 +1,4 @@
-# Run from the repository root: .\scripts\deploy.ps1
+﻿# Run from the repository root: .\scripts\deploy.ps1
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
@@ -59,10 +59,11 @@ terraform {
     RunChecked 'terraform' @('-chdir=infra/application', 'init', '-input=false', '-reconfigure', "-backend-config=bucket=$bucket")
     RunChecked 'terraform' @('-chdir=infra/application', 'apply', '-input=false', '-auto-approve', "-var=commit_sha=$sha")
 
-    Write-Host "`nSUCCESS — deployed Git commit $sha" -ForegroundColor Green
+    Write-Host "`nSUCCESS - deployed Git commit $sha" -ForegroundColor Green
     Write-Host 'Health URL:'
     RunChecked 'terraform' @('-chdir=infra/application', 'output', '-raw', 'health_url')
     Write-Host "`nFirst run (private migration job): gcloud run jobs execute meridian-migrate --region $region --wait"
 } finally {
     Pop-Location
 }
+
