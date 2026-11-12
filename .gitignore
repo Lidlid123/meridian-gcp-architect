@@ -1,0 +1,15 @@
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/.terraform.lock.hcl
+**/backend.tf
+*.tfvars
+*.tfvars.json
+*.tfplan
+.env
+.env.*
+__pycache__/
+.pytest_cache/
+*.pyc
+.vscode/
+.idea/
