@@ -21,9 +21,9 @@ Use your existing project ID (not its display name). Do **not** download service
 ## 3. Set project and name in PowerShell
 
 ```powershell
-$env:TF_VAR_project_id = 'REPLACE_WITH_YOUR_PROJECT_ID'
+$env:TF_VAR_project_id = 'robust-metrics-401107'
 $env:TF_VAR_region = 'europe-west1'
-$env:TF_VAR_candidate_name = 'REPLACE_WITH_YOUR_EXACT_FULL_NAME'
+$env:TF_VAR_candidate_name = 'LIDOR_KORESH'
 ```
 
 For the health contract, the name must match what you told Commit. These settings apply to the **current PowerShell session**. Rerun them when starting a new shell.
@@ -34,8 +34,8 @@ For the health contract, the name must match what you told Commit. These setting
 
 ```powershell
 git log --oneline --reverse
-git config user.name "YOUR NAME"
-git config user.email "YOUR_GITHUB_EMAIL"
+git config user.name "lidor koresh"
+git config user.email "lidor123@gmail.com"
 git status
 git add .
 git commit -m 'docs: reviewed deployment instructions and AI transcript'

@@ -1,18 +1,24 @@
-# Decisions made without a customer reply
+# Assumptions and Architectural Decisions
 
-These assumptions map 1:1 to the seven numbered items in `CLARIFICATIONS.md`. They are provisional **architectural decisions**, not invented customer approvals.
+The following decisions were made without customer confirmation.
 
-1. **EU residence / US expansion.** Choose `europe-west1` (Belgium) for Cloud Run, Cloud SQL, Artifact Registry and Secret Manager user-managed replicas. Keep the state bucket in EU multi-region. Assume no genuine payment/PII data in the demo. A later US expansion requires a privacy, compliance and routing decision; don't create a US database simply because US customers are possible. Cloud Logging and operational metadata residency need a separate review before production; an EU resource region alone does not guarantee end-to-end residency.
-2. **VPC choice.** Create `meridian-vpc`, a custom-mode network, plus `10.40.0.0/24` Cloud Run subnet and private services access (`10.64.0.0/16`) for Cloud SQL. Use Cloud Run Direct VPC egress. This rejects the default-VPC request and the mistaken idea that application and Cloud SQL must occupy one unrestricted VPC. A Cloud SQL managed producer network connects by private services access; PSC is another valid topology for other scenarios.
-3. **Laptop migrations.** Developers initiate migrations via `gcloud run jobs execute meridian-migrate --wait` with their own Google IAM. SQL runs on a private Cloud Run Job using the same private SQL connector as the API. This fulfills an operational ability to trigger migrations from laptops, **not** direct laptop network/database access. No public database IP, bastion or VPN is required. Job execution should be granted separately to authorized developers; no broad developer group is pre-authorized in this demo.
-4. **CI credentials.** Do not create/download a JSON service-account key. Local deployment uses short-lived user Application Default Credentials. The example GitHub Actions workflow uses OIDC/WIF and requires a separately configured pool, provider, repo binding, and narrowly scoped service account before use. This is deliberately a bonus example, not an operational CI pipeline.
-5. **Proof of concept / production bar.** Deploy a small single-zone Cloud SQL Enterprise instance (`db-f1-micro`), one Cloud Run service scaling to zero, and a separate migration job. Backups, HA and deletion protection are off *only for the short-lived demo* to reduce costs. Never use this configuration with real payment information. Real production needs HA, backups/PITR, migration approvals, change control, stronger database sizing, monitoring, alerting, SLOs, DR tests, relevant PCI DSS controls and explicit data classification.
-6. **Secrets and verification.** Generate two synthetic values via Terraform: a DB password and a demo third-party token; provision both as regional Secret Manager versions. The API uses its own service account and accesses both versions *on every* `/health` request. A SQL `SELECT 1` happens *on every* `/health` request. Any failure returns HTTP 503 and `error`, not a hardcoded `ok`. The token is not usable with a third-party service. Because values appear in Terraform state, this method is **only suitable for synthetic PoC secrets**; state access must be restricted. Prefer a separate secrets-provisioning process or supported write-only/ephemeral Terraform patterns for real credentials.
-7. **Delivery and boundaries.** Use a Git commit SHA as Docker image tag and as runtime `COMMIT_SHA`. Terraform state resides in a versioned EU GCS bucket. Bootstrap Terraform first creates the bucket locally, then its own state is migrated to GCS. Images are built/pushed with Docker (a normal artifact-build step; infrastructure remains Terraform). Public Cloud Run invokes only a read-only health endpoint. When the reviewer confirms readiness, grant project `roles/viewer` with the optional Terraform variable; recognize that some read-only permissions may expose state data if granted too broadly—**never use real secret values in this demo**.
+1. **EU Region:** Deploy resources in `europe-west1` (Belgium) and store Terraform state in the EU. Use synthetic data only. Review GDPR, data residency, and US expansion requirements before production.
 
-## Further decisions taken while implementing
+2. **Networking:** Use a dedicated custom VPC (`meridian-vpc`) instead of the default VPC. Cloud Run connects privately to Cloud SQL using Direct VPC egress and Private Services Access. No public database IP.
 
-- Python Flask plus Cloud SQL Python Connector with `IPTypes.PRIVATE` and driver `pg8000` is a lightweight demonstration of identity-based connector authentication and encrypted connections without opening SQL to the internet. IAM grants Cloud SQL Client and per-secret access to the Cloud Run runtime identity.
-- No application data or customer credentials are committed. Docker image build/push is performed with local Docker and Google CLI rather than a JSON key or ad hoc Cloud Console resources.
-- Public `/health` contains no private database host, credentials, SQL statement, or secret values. The application implements no other public business endpoint.
-- The GCS backend bucket is deliberately protected from Terraform destroy and retained for state audit; cleanup instructions explicitly call this out.
+3. **Database Migrations:** Developers trigger a private Cloud Run Job from their laptops using Google IAM. The job performs migrations inside GCP without exposing PostgreSQL publicly.
+
+4. **CI/CD Authentication:** Reject long-lived JSON service account keys. Use local Application Default Credentials (ADC) for deployment and recommend GitHub Actions OIDC/Workload Identity Federation for CI/CD.
+
+5. **PoC Environment:** Use a small Cloud SQL instance (`db-f1-micro`) and Cloud Run with scale-to-zero. Disable HA, backups, and deletion protection for this temporary demo only. Production requires HA, backups, monitoring, and security controls.
+
+6. **Secrets and Health Checks:** Store two synthetic secrets in Secret Manager. The API reads secrets and executes a real PostgreSQL `SELECT 1` on every `/health` request. Failures return HTTP 503. Demo secrets may appear in Terraform state, so real credentials must use a safer provisioning method.
+
+7. **Deployment:** Use Terraform with remote state in a versioned GCS bucket. Build Docker images tagged with the Git commit SHA. Keep the public endpoint limited to `/health` and grant reviewers read-only project access.
+
+## Additional Implementation Decisions
+
+- **Application:** Python Flask with Cloud SQL Python Connector (`pg8000`, private IP).
+- **Security:** Dedicated Cloud Run service account with limited IAM permissions.
+- **Credentials:** No real customer data, passwords, or service account keys committed to Git.
+- **Cleanup:** Remove demo infrastructure after the review, while retaining the Terraform state bucket until it is separately cleaned up.
