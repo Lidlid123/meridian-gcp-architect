@@ -97,7 +97,7 @@ Do this only in the intended **isolated demo project**: GCP read-only access can
 Create a GitHub repository and add it as remote (replace placeholder URL):
 
 ```powershell
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+git remote add origin https://github.com/Lidlid123/meridian-gcp-architect.git
 git push -u origin main
 ```
 
